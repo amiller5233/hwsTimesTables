@@ -19,9 +19,11 @@ struct ContentView: View {
     
     @State private var multiplier = 2
     @State private var questionCount = 5
-    
     @State private var questions: [Question] = []
-    @State private var test = "Hello!"
+    
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    @State private var showAlert = false
     
     
     var body: some View {
@@ -57,52 +59,71 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                         }
                     }
-                    
                 }
                 .navigationTitle("TimesTables")
             }
         } else {
             NavigationView {
-//                ZStack {
-//                    LinearGradient(gradient: Gradient(colors: [.purple, .blue]), startPoint: .topLeading, endPoint: .bottomTrailing)
-//                        .ignoresSafeArea()
-                    
-                    Form {
-                        ForEach($questions, id: \.text) { $question in
-                            Section {
-                                TextField("0", value: $question.userAnswer, format: .number)
-                            } header: {
-                                Text("\(question.text)")
-                            }
-                        }
-                        
+                Form {
+                    ForEach($questions, id: \.text) { $question in
                         Section {
-                            Button("Test") {
-                                print(questions)
-                            }
-                            .frame(maxWidth: .infinity)
+                            TextField("0", value: $question.userAnswer, format: .number)
+                                .keyboardType(.decimalPad)
+                        } header: {
+                            Text("\(question.text)")
                         }
                     }
-//                }
+                        
+                    Section {
+                        Button("Submit") {
+                            print(questions)
+                            submitAnswers()
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .toolbar {
+                    Button("Reset", action: resetGame)
+                }
+                .alert(alertTitle, isPresented: $showAlert) {
+                    Button("OK") {
+                        resetGame()
+                    }
+                } message: {
+                    Text(alertMessage)
+                }
             }
         }
-        
     }
     
     func startGame() {
-        withAnimation {
-            isGameRunning = true
-        }
+        isGameRunning = true
         questions = Array(1...questionCount)
             .map { number in
                 Question(text: "What is \(number) x \(multiplier)?", correctAnswer: number * multiplier)
             }
+            .shuffled()
     }
     
     func resetGame() {
         isGameRunning = false
         multiplier = 2
         questionCount = 5
+        alertTitle = ""
+        alertMessage = ""
+    }
+    
+    func submitAnswers() {
+        alertTitle = "Results"
+        let numCorrect = questions.reduce(0) { acc, cur in
+            if let userAnswer = cur.userAnswer {
+                print(userAnswer, cur.correctAnswer)
+                return acc + (userAnswer == cur.correctAnswer ? 1 : 0)
+            }
+            return acc
+        }
+        alertMessage = "You got \(numCorrect)\\\(questions.count) correct"
+        showAlert = true;
     }
 }
 
